@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="css/bootstrap.min.css" />
+</head>
+<style>
+	table{
+		/* border:1px solid;
+		width:800px; */ 	
+		text-align: center;
+	}
+	
+	td{
+		/* border:1px solid; */
+		text-align: center;
+	}
+</style>
+<body>
+	<h2>部门员工管理</h2><br><br>
+	<table class="table table-hover" style="width:100%">
+		<tr>
+			<td>部门编号</td>
+			<td>部门名称</td>
+			<td>部门地址</td>
+		</tr>
+	</table>
+</body>
+</html>
+<script src="js/jquery-1.12.4.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script>
+
+	var dept = "";//接收部门
+	var count="";//统计点击员工的次数
+//查询所有部门
+	function fnLoad(){
+		$.ajax({
+			url:"/deptapi/queryAll",
+			type:"get",
+			dataType:"json",
+			success:function(result){
+				$.each(result,function(i,obj){
+					var $tr =$('<tr>'
+								+'<td  align="center" class="altbg2">'
+									+''+obj.did+''
+								+'</td>'
+								+'<td class="altbg2" align="center">'
+									+'<a class="dname" href="javascript:void(0)">'+obj.dname+'</a>'
+								+'</td>'
+								+'<td class="altbg2"  align="center">'
+									+''+obj.daddress+''
+								+'</td>'
+							+'</tr>');
+					$("table").append($tr);
+				})
+			}
+		})
+	}
+
+	$(function(){
+		
+		fnLoad();
+		
+		//查看一个部门下面的员工信息
+		$(document).on("click",".dname",function(){
+			
+			if(count==0){
+				count++;
+				var $id = $(this).parent().prev().text();
+				dept = $(this).text();
+				var $current = $(this);
+				$.ajax({
+					url:"/empapi/queryAll/"+$id,
+					type:"get",
+					dataType:"json",
+					success:function(result){
+						if(result!=""){
+							var $head = $('<tr>'
+									+'<td>姓名</td>'
+									+'<td>工作</td>'
+									+'<td>工资</td>'
+									+'<td>入职日期</td>'
+									+'<td>奖金</td>'
+									+'<td>操作</td>'
+								+'</tr>')
+						//将员工信息标题追加到该部门后面		
+						$($current).parent().parent().after($head);
+			
+						}
+
+						$.each(result,function(i,obj){
+							var $tr =$('<tr class="empCount">'
+										+'<td class="altbg2" align="center">'
+											+''+obj.ename+''
+										+'</td>'
+										+'<td class="altbg2"  align="center">'
+											+''+obj.ework+''
+										+'</td>'
+										+'<td  align="center" class="altbg2">'
+											+''+obj.esalary+''
+										+'</td>'
+										+'<td class="altbg2" align="center">'
+											+''+obj.etime+''
+										+'</td>'
+										+'<td class="altbg2"  align="center">'
+											+''+obj.emoney+''
+										+'</td>'
+										+'<td  align="center" class="altbg2">'
+											+'<a class="del" href="javascript:void(0)">删除</a>'
+											+'<input type="hidden" value="'+obj.eid+'">'
+										+'</td>'
+									+'</tr>');
+							
+							//将员工信息追加到该部门后面		
+							$($current).parent().parent().next().after($tr);
+						})
+					}
+				})
+			
+			}else if(count==1){
+				$("table").html("")
+				fnLoad();
+				count--;
+			}
+			
+		})
+		
+		//删除
+		$(document).on("click",".del",function(){
+			var yn = confirm("确定要删除吗?");
+			if(yn){
+				var $id = $(this).next().val();
+				var current = $(this);
+				
+				$.ajax({
+					url:"/empapi/deleteEmp/"+$id,
+					type:"delete",
+					dataType:"json",
+					success:function(result){
+						if(result>0){
+							$(current).parent().parent().remove();
+							//获取该部门员工数量
+							var $empCount = $(".empCount").length+1;
+							$empCount--;
+							alert(dept+"还有"+$empCount+"位员工");
+							if($empCount==0){
+								$("table").html("");
+								$("table").append('<tr><td>部门编号</td><td>部门名称</td><td>部门地址</td></tr>')
+								fnLoad();
+							}
+						}
+					}
+				})
+			}
+		})
+		
+	})
+</script>
